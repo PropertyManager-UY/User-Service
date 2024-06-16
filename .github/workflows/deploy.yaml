@@ -1,0 +1,134 @@
+name: Continuous Deployment
+
+on:
+  workflow_run:
+    workflows: ["Run Tests and Deploy"]
+    types:
+      - completed
+
+jobs:
+  build-and-deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    env:
+      DOCKER_IMAGE_TAG: "latest"
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      K8_NAMESPACE: "property-manager"
+      K8_DEPLOYMENT: "auth-deployment"
+      K8_SECRET: "propertymanager-secrets"
+      K8_APP: "auth"
+      SERVICE_NAME: "auth-service"
+      HPA_NAME: "auth-hpa"
+      SERVER_KUBE_CONFIG: ${{ secrets.SERVER_KUBE_CONFIG }}
+      DEPLOYMENT_DIR: ${{ secrets.DEPLOYMENT_DIR }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Create SSH directory
+        run: mkdir -p ~/.ssh && chmod 700 ~/.ssh
+
+      - name: Check and add host key to known_hosts
+        run: ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+      - name: Login to Docker Hub
+        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t $DOCKER_USERNAME/property_manager.$SERVICE_NAME:$DOCKER_IMAGE_TAG .
+          docker push $DOCKER_USERNAME/property_manager.$SERVICE_NAME:$DOCKER_IMAGE_TAG
+
+      - name: Set up SSH for remote server access
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Create Deployment Directory
+        run: ssh ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} mkdir -p ${DEPLOYMENT_DIR}/deployment-${K8_APP}
+
+      - name: Substitute Environment Variables in Kubernetes Manifests
+        run: |
+          for file in .deploy/kubernetes/*.yaml; do
+            base=$(basename $file)
+            envsubst < $file > $base
+          done
+          scp -r *.yaml ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOYMENT_DIR }}/deployment-${K8_APP}
+
+      - name: Create Namespace if Not Exists
+        run: |
+          ssh ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} << EOF
+            kubectl get namespace ${K8_NAMESPACE} || kubectl create namespace ${K8_NAMESPACE}
+          EOF
+
+      - name: Check Resource Status
+        id: check_resources
+        run: |
+          status=$(ssh ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} "K8_DEPLOYMENT=${K8_DEPLOYMENT} SERVICE_NAME=${SERVICE_NAME} HPA_NAME=${HPA_NAME} K8_NAMESPACE=${K8_NAMESPACE} bash -s" << EOF
+            deployment_exists=false
+            service_exists=false
+            hpa_exists=false
+            if kubectl get deployment \$K8_DEPLOYMENT --namespace=\$K8_NAMESPACE &> /dev/null; then
+              deployment_exists=true
+            fi
+            if kubectl get svc \$SERVICE_NAME --namespace=\$K8_NAMESPACE &> /dev/null; then
+              service_exists=true
+            fi
+            if kubectl get hpa \$HPA_NAME --namespace=\$K8_NAMESPACE &> /dev/null; then
+              hpa_exists=true
+            fi
+            echo "deployment_exists=\$deployment_exists;service_exists=\$service_exists;hpa_exists=\$hpa_exists"
+          EOF
+          )
+          deployment_exists=$(echo "$status" | grep -oP 'deployment_exists=\K[^;]+')
+          service_exists=$(echo "$status" | grep -oP 'service_exists=\K[^;]+')
+          hpa_exists=$(echo "$status" | grep -oP 'hpa_exists=\K[^;]+')
+          echo "::set-output name=deployment_exists::$deployment_exists"
+          echo "::set-output name=service_exists::$service_exists"
+          echo "::set-output name=hpa_exists::$hpa_exists"
+
+      - name: Create Kubernetes Resources
+        if: steps.check_resources.outputs.deployment_exists == 'false' || steps.check_resources.outputs.service_exists == 'false' || steps.check_resources.outputs.hpa_exists == 'false'
+        run: |
+          ssh ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} << EOF
+            kubectl apply -f ${{ secrets.DEPLOYMENT_DIR }}/deployment-${K8_APP} --namespace=${K8_NAMESPACE}
+          EOF
+
+      - name: Update Kubernetes Deployment
+        if: steps.check_resources.outputs.deployment_exists == 'true' && steps.check_resources.outputs.service_exists == 'true' && steps.check_resources.outputs.hpa_exists == 'true'
+        run: |
+          ssh ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} << EOF
+            kubectl set image deployment/$K8_DEPLOYMENT $SERVICE_NAME=$DOCKER_USERNAME/property_manager.$SERVICE_NAME:$DOCKER_IMAGE_TAG --namespace=${K8_NAMESPACE}
+          EOF
+
+  clear:
+    if: ${{ always() }}
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+
+    env:
+      K8_APP: "auth"
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Create SSH directory
+        run: mkdir -p ~/.ssh && chmod 700 ~/.ssh
+
+      - name: Check and add host key to known_hosts
+        run: ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+      - name: Set up SSH for remote server access
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Clean Deployment Cache
+        run: |
+          ssh ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} << EOF
+            rm -rf ${{ secrets.DEPLOYMENT_DIR }}/deployment-${K8_APP}
+          EOF

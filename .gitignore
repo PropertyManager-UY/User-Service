@@ -1,0 +1,7 @@
+# Ignorar archivos y carpetas generados por Python
+__pycache__/
+tests/__pycache__/
+
+# Ignorar elementos de prueba durante el desarrollo del microservicio
+.env
+cookies.txt
