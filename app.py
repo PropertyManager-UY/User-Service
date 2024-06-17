@@ -6,7 +6,7 @@ from redis import Redis
 from datetime import timedelta
 import os
 
-app = Flask(__name__)
+app = Flask('auth')
 
 # Configuraciones
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
@@ -39,7 +39,7 @@ def configure_app():
 # Llamamos a la función de configuración
 configure_app()
 
-app.register_blueprint(auth_bp, url_prefix='/auth')
+app.register_blueprint(auth_bp)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
