@@ -101,6 +101,7 @@ jobs:
         run: |
           ssh ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} << EOF
             kubectl set image deployment/$K8_DEPLOYMENT $SERVICE_NAME=$DOCKER_USERNAME/property_manager.$SERVICE_NAME:$DOCKER_IMAGE_TAG --namespace=${K8_NAMESPACE}
+            kubectl rollout restart deployment/$K8_DEPLOYMENT --namespace=${K8_NAMESPACE}  
           EOF
 
   clear:
