@@ -21,7 +21,6 @@ jobs:
       K8_APP: "auth"
       SERVICE_NAME: "auth-service"
       HPA_NAME: "auth-hpa"
-      SERVER_KUBE_CONFIG: ${{ secrets.SERVER_KUBE_CONFIG }}
       DEPLOYMENT_DIR: ${{ secrets.DEPLOYMENT_DIR }}
 
     steps:
