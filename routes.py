@@ -32,15 +32,15 @@ def is_valid_email(email):
 def session_status():
     token = session.get('access_token')
     if not token:
-        return jsonify(logged_in=False), 200
+        return jsonify(logged_in=False), 401
     
     try:
         decode_token(token)
         return jsonify(logged_in=True), 200
     except ExpiredSignatureError:
-        return jsonify(logged_in=False, message="Token has expired"), 200
+        return jsonify(logged_in=False, message="Token has expired"), 401
     except InvalidTokenError:
-        return jsonify(logged_in=False, message="Invalid token"), 200
+        return jsonify(logged_in=False, message="Invalid token"), 401
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
