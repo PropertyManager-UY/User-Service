@@ -1,6 +1,5 @@
 import os
 import unittest
-from flask import json
 from models import User
 from pymongo import MongoClient
 from werkzeug.security import check_password_hash
