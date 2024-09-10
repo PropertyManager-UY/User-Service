@@ -21,7 +21,7 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 # Configuración de seguridad de la sesión
 app.config['SESSION_COOKIE_SECURE'] = True  # Only send cookie over HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True  # Hide cookie from JavaScript
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Prevent CSRF attacks
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Set 'Lax' Prevent CSRF attacks
 
 # Inicializaciones
 mongo = MongoClient(os.getenv('MONGO_URI'))
