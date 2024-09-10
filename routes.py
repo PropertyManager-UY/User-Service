@@ -29,18 +29,9 @@ def is_valid_email(email):
     return re.match(pattern, email) is not None
 
 @auth_bp.route('/session_status', methods=['GET'])
+@session_required
 def session_status():
-    token = session.get('access_token')
-    if not token:
-        return jsonify(logged_in=False), 401
-    
-    try:
-        decode_token(token)
-        return jsonify(logged_in=True), 200
-    except ExpiredSignatureError:
-        return jsonify(logged_in=False, message="Token has expired"), 401
-    except InvalidTokenError:
-        return jsonify(logged_in=False, message="Invalid token"), 401
+    return jsonify(logged_in=True), 200
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
