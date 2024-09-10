@@ -30,8 +30,8 @@ def is_valid_email(email):
 
 @auth_bp.route('/session_status', methods=['GET'])
 @session_required
-def session_status():
-    return jsonify(logged_in=True), 200
+def session_status(current_user):
+    return jsonify(message=f"This is the current user: {current_user}", logged_in=True), 200
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
