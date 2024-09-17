@@ -96,7 +96,7 @@ def logout(current_user):
 @auth_bp.route('/delete', methods=['DELETE'])
 @auth_bp.route('/delete/<user_id>', methods=['DELETE'])
 @session_required
-def delete_user(current_user, user_id):
+def delete_user(current_user, user_id=None):
     user_model = current_app.user_model
     
     if user_id is None:
@@ -114,7 +114,7 @@ def delete_user(current_user, user_id):
 @auth_bp.route('/update', methods=['PUT'])
 @auth_bp.route('/update/<user_id>', methods=['PUT'])
 @session_required
-def update_user(current_user, user_id):
+def update_user(current_user, user_id=None):
     user_model = current_app.user_model
     data = request.get_json()
 
@@ -146,10 +146,12 @@ def get_all_users(current_user):
 @auth_bp.route('/users/inmobiliaria', methods=['GET'])
 @auth_bp.route('/users/inmobiliaria/<id_inmobiliaria>', methods=['GET'])
 @session_required
-def get_users_by_inmobiliaria(current_user, id_inmobiliaria):
+def get_users_by_inmobiliaria(current_user, id_inmobiliaria=None):
     user_model = current_app.user_model
 
     if id_inmobiliaria is None:
+        if current_user['id_inmobiliaria'] is None:
+            return jsonify(message="Debes pertenecer a una inmobiliaria para esta acción"), 403
         id_inmobiliaria = current_user['id_inmobiliaria']
 
     if current_user['role'] == 'admin':
