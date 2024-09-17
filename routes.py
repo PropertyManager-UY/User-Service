@@ -94,11 +94,13 @@ def logout(current_user):
     return jsonify(message="Logged out successfully"), 200
 
 @auth_bp.route('/delete', methods=['DELETE'])
+@auth_bp.route('/delete/<user_id>', methods=['DELETE'])
 @session_required
-def delete_user(current_user):
+def delete_user(current_user, user_id):
     user_model = current_app.user_model
-    data = request.get_json()
-    user_id = data.get('user_id')
+    
+    if user_id is None:
+        user_id = current_user['id']
     
     # Check if the user is admin or the owner of the account
     if current_user['role'] == 'admin' or current_user['id'] == user_id:
@@ -109,13 +111,17 @@ def delete_user(current_user):
     else:
         return jsonify(message="Permission denied"), 403
 
+@auth_bp.route('/update', methods=['PUT'])
 @auth_bp.route('/update/<user_id>', methods=['PUT'])
 @session_required
 def update_user(current_user, user_id):
     user_model = current_app.user_model
     data = request.get_json()
 
-    if current_user['role'] != 'admin' and current_user['id'] != user_id:
+    if user_id is None:
+        user_id = current_user['id']
+
+    if current_user['role'] != 'admin' or current_user['id'] != user_id:
         return jsonify(message="Permission denied"), 403
 
     if 'id_inmobiliaria' in data and current_user['role'] != 'admin':
@@ -137,10 +143,15 @@ def get_all_users(current_user):
     all_users = user_model.get_all_users()
     return jsonify(users=all_users), 200
 
+@auth_bp.route('/users/inmobiliaria', methods=['GET'])
 @auth_bp.route('/users/inmobiliaria/<id_inmobiliaria>', methods=['GET'])
 @session_required
 def get_users_by_inmobiliaria(current_user, id_inmobiliaria):
     user_model = current_app.user_model
+
+    if id_inmobiliaria is None:
+        id_inmobiliaria = current_user['id_inmobiliaria']
+
     if current_user['role'] == 'admin':
         found_users = user_model.get_users_by_inmobiliaria(id_inmobiliaria)
         return jsonify(users=found_users), 200
