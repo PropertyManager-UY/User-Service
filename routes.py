@@ -50,18 +50,25 @@ def register():
     else:
         return jsonify(message="User or email already exists"), 409
 
+@auth_bp.route('/register_member', methods=['POST'])
 @auth_bp.route('/register_member/<id_inmobiliaria>', methods=['POST'])
 @session_required
-def register_member(current_user, id_inmobiliaria):
+def register_member(current_user, id_inmobiliaria=None):
     user_model = current_app.user_model
+
+    if id_inmobiliaria is None:
+        id_inmobiliaria = current_user['id_inmobiliaria']
+
     if current_user['role'] not in ['admin', 'owner']:
         return jsonify(message="Permission denied"), 403
+    elif current_user['role'] == 'owner' and id_inmobiliaria != current_user['id_inmobiliaria']:
+        return jsonify(message="Only can register members to your own inmobiliray"), 403
 
     data = request.get_json()
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
-    role = data.get('role')
+    role = 'agente'
 
     if not is_valid_email(email):
         return jsonify(message="Invalid email format"), 400
