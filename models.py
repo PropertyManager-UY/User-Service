@@ -40,6 +40,8 @@ class User:
                 return False  # Email already exists
             update_data['email'] = updated_fields['email']
         if 'username' in updated_fields:
+            if self.users_collection.find_one({"username": updated_fields['username']}):
+                return False  # User Name already exists
             update_data['username'] = updated_fields['username']
         
         result = self.users_collection.update_one(
