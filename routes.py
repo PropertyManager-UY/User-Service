@@ -50,6 +50,27 @@ def register():
     else:
         return jsonify(message="User or email already exists"), 409
 
+@auth_bp.route('/profile', methods=['GET'])
+@auth_bp.route('/profile/<user_id>', methods=['GET'])
+@session_required
+def profile(current_user, user_id=None):
+    user_model = current_app.user_model
+
+    if user_id is None:
+        user_id = current_user['id']
+
+    user_data = user_model.find_user_by_id(user_id)
+    filtered_data = {
+        "username": user_data["username"],
+        "email": user_data["email"],
+        "role": user_data["role"]
+    }
+
+    if user_data:
+        return jsonify(user_data=filtered_data), 200
+    else:
+        return jsonify(message="User not found"), 404
+
 @auth_bp.route('/register_member', methods=['POST'])
 @auth_bp.route('/register_member/<id_inmobiliaria>', methods=['POST'])
 @session_required
