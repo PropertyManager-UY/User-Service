@@ -109,7 +109,9 @@ def login():
     if user and check_password_hash(user['password'], password):
         access_token = create_access_token(identity={'id': user['_id'], 'username': user['username'], 'role': user['role'], 'id_inmobiliaria': user['id_inmobiliaria']})
         session['access_token'] = access_token
-        return jsonify(message="Logged in successfully"), 200
+        decoded_token=decode_token(access_token)
+        current_user=decoded_token['sub']
+        return jsonify(message="Logged in successfully", access_token=access_token, token_content=decoded_token, user=current_user), 200
     else:
         return jsonify(message="Invalid credentials"), 401
 
