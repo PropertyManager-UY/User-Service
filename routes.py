@@ -4,7 +4,6 @@ from werkzeug.security import check_password_hash
 from functools import wraps
 from jwt import ExpiredSignatureError, InvalidTokenError
 import re
-import json
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -110,16 +109,15 @@ def login():
     if user and check_password_hash(user['password'], password):
         access_token = create_access_token(identity={'id': user['_id'], 'username': user['username'], 'role': user['role'], 'id_inmobiliaria': user['id_inmobiliaria']})
         session['access_token'] = access_token
-        decoded_token=decode_token(access_token)
-        current_user=decoded_token['sub']
-        response_dict = {
-            "message": "Logged in successfully",
-            "access_token": access_token,
-            "token_content": decoded_token,
-            "user": current_user
-        }
-        #return jsonify(message="Logged in successfully")
-        return json.dumps(response_dict)
+
+        decoded_token = decode_token(access_token)
+        current_user = decoded_token['sub']
+
+        current_app.logger.info(f"Access Token: {access_token}")
+        current_app.logger.debug(f"Decoded Token: {decoded_token}")
+        current_app.logger.info(f"Current User: {current_user}")
+
+        return jsonify(message="Logged in successfully"), 200
     else:
         return jsonify(message="Invalid credentials"), 401
 
