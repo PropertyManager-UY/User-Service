@@ -60,13 +60,13 @@ def profile(current_user, user_id=None):
         user_id = current_user['id']
 
     user_data = user_model.find_user_by_id(user_id)
-    filtered_data = {
-        "username": user_data["username"],
-        "email": user_data["email"],
-        "role": user_data["role"]
-    }
 
     if user_data:
+        filtered_data = {
+            "username": user_data["username"],
+            "email": user_data["email"],
+            "role": user_data["role"]
+        }
         return jsonify(user_data=filtered_data), 200
     else:
         return jsonify(message="User not found"), 404
@@ -83,7 +83,7 @@ def register_member(current_user, id_inmobiliaria=None):
     if current_user['role'] not in ['admin', 'owner']:
         return jsonify(message="Permission denied"), 403
     elif current_user['role'] == 'owner' and id_inmobiliaria != current_user['id_inmobiliaria']:
-        return jsonify(message="Only can register members to your own inmobiliray"), 403
+        id_inmobiliaria = current_user['id_inmobiliaria']
 
     data = request.get_json()
     username = data.get('username')
@@ -149,7 +149,7 @@ def update_user(current_user, user_id=None):
     if user_id is None:
         user_id = current_user['id']
 
-    if current_user['role'] != 'admin' or current_user['id'] != user_id:
+    if current_user['role'] != 'admin' and current_user['id'] != user_id:
         return jsonify(message="Permission denied"), 403
 
     if 'id_inmobiliaria' in data and current_user['role'] != 'admin':
