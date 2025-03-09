@@ -139,6 +139,7 @@ def delete_user(current_user, user_id=None):
     else:
         return jsonify(message="Permission denied"), 403
 
+"""
 @auth_bp.route('/update', methods=['PUT'])
 @auth_bp.route('/update/<user_id>', methods=['PUT'])
 @session_required
@@ -161,6 +162,7 @@ def update_user(current_user, user_id=None):
         return jsonify(message="User updated successfully"), 200
     else:
         return jsonify(message="Error updating user"), 500
+"""
 
 @auth_bp.route('/users', methods=['GET'])
 @session_required
