@@ -1,5 +1,4 @@
 from flask import Flask
-from flask_jwt_extended import JWTManager
 from pymongo import MongoClient
 from flask_session import Session
 from redis import Redis
@@ -10,7 +9,6 @@ app = Flask('auth')
 
 # Configuraciones
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
 app.config['SESSION_TYPE'] = 'redis'
 app.config['SESSION_REDIS'] = Redis(host=os.getenv('REDIS_HOST'), port=int(os.getenv('REDIS_PORT')))
 app.config['SESSION_PERMANENT'] = False
@@ -25,7 +23,6 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Set 'Lax' Prevent CSRF attacks
 
 # Inicializaciones
 mongo = MongoClient(os.getenv('MONGO_URI'))
-jwt = JWTManager(app)
 server_session = Session(app)
 
 # Registra Blueprint
