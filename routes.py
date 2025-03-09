@@ -149,7 +149,7 @@ def update_user(current_user, user_id=None):
     if user_id is None:
         user_id = current_user['id']
 
-    if current_user['role'] != 'admin' or current_user['id'] != user_id:
+    if current_user['role'] != 'admin' and current_user['id'] != user_id:
         return jsonify(message="Permission denied"), 403
 
     if 'id_inmobiliaria' in data and current_user['role'] != 'admin':
