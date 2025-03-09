@@ -1,4 +1,4 @@
-from flask import Blueprint, current_app, request, jsonify, session
+from flask import Blueprint, current_app, request, jsonify, session, make_response
 from flask_jwt_extended import create_access_token, decode_token
 from werkzeug.security import check_password_hash
 from functools import wraps
@@ -10,7 +10,7 @@ auth_bp = Blueprint('auth', __name__)
 def session_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        token = session.get('access_token')
+        token = request.cookies.get('access_token') #session.get('access_token')
         if not token:
             return jsonify(message="Permission denied"), 403
         try:
@@ -108,18 +108,27 @@ def login():
     user = user_model.find_user_by_email(email)
     if user and check_password_hash(user['password'], password):
         access_token = create_access_token(identity={'id': user['_id'], 'username': user['username'], 'role': user['role'], 'id_inmobiliaria': user['id_inmobiliaria']})
+        """
         session['access_token'] = access_token
         return jsonify(message="Logged in successfully"), 200
+        """
+        response = make_response(jsonify(message="Logged in successfully"))
+        response.set_cookie('access_token', access_token, httponly=True, samesite='None', secure=True)
     else:
         return jsonify(message="Invalid credentials"), 401
 
 @auth_bp.route('/logout', methods=['POST'])
 @session_required
 def logout(current_user):
+    """
     session_id = request.cookies.get('session')
     print(f"Session ID {session_id} has been logged out")
     session.clear()
     return jsonify(message="Logged out successfully"), 200
+    """
+    response = make_response(jsonify(message="Logged out successfully"))
+    response.set_cookie('access_token', '', expires=0)  # Borra la cookie del token
+    return response, 200
 
 @auth_bp.route('/delete', methods=['DELETE'])
 @auth_bp.route('/delete/<user_id>', methods=['DELETE'])
