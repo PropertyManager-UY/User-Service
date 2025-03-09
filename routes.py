@@ -139,7 +139,6 @@ def delete_user(current_user, user_id=None):
     else:
         return jsonify(message="Permission denied"), 403
 
-"""
 @auth_bp.route('/update', methods=['PUT'])
 @auth_bp.route('/update/<user_id>', methods=['PUT'])
 @session_required
@@ -150,7 +149,7 @@ def update_user(current_user, user_id=None):
     if user_id is None:
         user_id = current_user['id']
 
-    if current_user['role'] != 'admin' and current_user['id'] != user_id:
+    if current_user['role'] != 'admin' or current_user['id'] != user_id:
         return jsonify(message="Permission denied"), 403
 
     if 'id_inmobiliaria' in data and current_user['role'] != 'admin':
@@ -162,7 +161,6 @@ def update_user(current_user, user_id=None):
         return jsonify(message="User updated successfully"), 200
     else:
         return jsonify(message="Error updating user"), 500
-"""
 
 @auth_bp.route('/users', methods=['GET'])
 @session_required
